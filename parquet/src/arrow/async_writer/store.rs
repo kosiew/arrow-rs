@@ -209,4 +209,9 @@ mod tests {
             &DataType::FixedSizeList(item_field.clone(), 2)
         );
     }
+
+    #[tokio::test]
+    async fn test_failure() {
+        assert_eq!(1, 2, "This test is designed to fail");
+    }
 }
