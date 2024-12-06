@@ -118,7 +118,8 @@ impl From<BufWriter> for ParquetObjectWriter {
 }
 #[cfg(test)]
 mod tests {
-    use arrow_array::{ArrayRef, Int64Array, RecordBatch};
+    use arrow_array::{ArrayRef, FixedSizeListArray, Float32Array, Int64Array, RecordBatch};
+    use arrow_schema::{DataType, Field, Schema};
     use object_store::memory::InMemory;
     use std::sync::Arc;
 
@@ -153,5 +154,59 @@ mod tests {
         let read = reader.next().unwrap().unwrap();
 
         assert_eq!(to_write, read);
+    }
+
+    #[tokio::test]
+    async fn test_fixed_size_array_parquet_roundtrip() {
+        let store = Arc::new(InMemory::new());
+
+        // Create the values array
+        let values = Arc::new(Float32Array::from(vec![1.0, 2.0, 3.0, 4.0])) as ArrayRef;
+
+        // Create the item field
+        let item_field = Arc::new(Field::new("item", DataType::Float32, true));
+
+        // Create the fixed-size list array
+        let fixed_size_list =
+            FixedSizeListArray::try_new(item_field.clone(), 2, values, None).unwrap();
+
+        // Create a RecordBatch with the fixed-size array
+        let schema = Arc::new(Schema::new(vec![Field::new(
+            "array",
+            DataType::FixedSizeList(item_field.clone(), 2),
+            true,
+        )]));
+        let batch =
+            RecordBatch::try_new(schema.clone(), vec![Arc::new(fixed_size_list) as ArrayRef])
+                .unwrap();
+
+        let object_store_writer =
+            ParquetObjectWriter::new(store.clone(), Path::from("fixed_size_array"));
+        let mut writer =
+            AsyncArrowWriter::try_new(object_store_writer, schema.clone(), None).unwrap();
+        writer.write(&batch).await.unwrap();
+        writer.close().await.unwrap();
+
+        let buffer = store
+            .get(&Path::from("fixed_size_array"))
+            .await
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
+        let mut reader = ParquetRecordBatchReaderBuilder::try_new(buffer)
+            .unwrap()
+            .build()
+            .unwrap();
+        let read_batch = reader.next().unwrap().unwrap();
+
+        // Check that the schema is preserved
+        assert_eq!(read_batch.schema().fields().len(), 1);
+        let field = read_batch.schema().field(0);
+        assert_eq!(field.name(), "array");
+        assert_eq!(
+            field.data_type(),
+            &DataType::FixedSizeList(item_field.clone(), 2)
+        );
     }
 }
