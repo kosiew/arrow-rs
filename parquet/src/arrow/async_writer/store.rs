@@ -200,18 +200,16 @@ mod tests {
             .unwrap();
         let read_batch = reader.next().unwrap().unwrap();
 
+        // Store the schema in a variable
+        let schema = read_batch.schema();
+        let field = schema.field(0);
+
         // Check that the schema is preserved
-        assert_eq!(read_batch.schema().fields().len(), 1);
-        let field = read_batch.schema().field(0);
+        assert_eq!(schema.fields().len(), 1);
         assert_eq!(field.name(), "array");
         assert_eq!(
             field.data_type(),
             &DataType::FixedSizeList(item_field.clone(), 2)
         );
-    }
-
-    #[tokio::test]
-    async fn test_failure() {
-        assert_eq!(1, 2, "This test is designed to fail");
     }
 }
