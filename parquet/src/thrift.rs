@@ -259,7 +259,7 @@ fn collection_u8_to_type(b: u8) -> thrift::Result<TType> {
 }
 
 fn u8_to_type(b: u8) -> thrift::Result<TType> {
-    println!("==> u8_to_type: {}", b);
+    println!("==> ==> u8_to_type: {}", b);
     match b {
         0x00 => Ok(TType::Stop),
         0x03 => Ok(TType::I08), // equivalent to TType::Byte
