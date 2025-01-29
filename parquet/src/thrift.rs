@@ -274,7 +274,7 @@ fn u8_to_type(b: u8) -> thrift::Result<TType> {
         0x0C => Ok(TType::Struct),
         unkn => Err(thrift::Error::Protocol(thrift::ProtocolError {
             kind: thrift::ProtocolErrorKind::InvalidData,
-            message: format!("==> cannot convert {} into TType", unkn),
+            message: format!("==> cannot convert {} into TType!", unkn),
         })),
     }
 }
