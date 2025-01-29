@@ -40,7 +40,7 @@ pub struct Field {
     nullable: bool,
     #[deprecated(
         since = "54.0.0",
-        note = "The ability to preserve dictionary IDs will be removed. With it, all fields related to it."
+        note = "==> The ability to preserve dictionary IDs will be removed. With it, all fields related to it."
     )]
     dict_id: i64,
     dict_is_ordered: bool,
