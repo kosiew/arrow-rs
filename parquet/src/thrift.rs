@@ -120,6 +120,7 @@ impl TInputProtocol for TCompactSliceInputProtocol<'_> {
     }
 
     fn read_field_begin(&mut self) -> thrift::Result<TFieldIdentifier> {
+        println!("==> read_field_begin");
         // we can read at least one byte, which is:
         // - the type
         // - the field delta and the type
@@ -136,6 +137,7 @@ impl TInputProtocol for TCompactSliceInputProtocol<'_> {
             }
             ttu8 => u8_to_type(ttu8),
         }?;
+        println!("==> field_type: {:?}", field_type);
 
         match field_type {
             TType::Stop => Ok(
@@ -257,6 +259,7 @@ fn collection_u8_to_type(b: u8) -> thrift::Result<TType> {
 }
 
 fn u8_to_type(b: u8) -> thrift::Result<TType> {
+    println!("==> u8_to_type: {}", b);
     match b {
         0x00 => Ok(TType::Stop),
         0x03 => Ok(TType::I08), // equivalent to TType::Byte
@@ -271,7 +274,7 @@ fn u8_to_type(b: u8) -> thrift::Result<TType> {
         0x0C => Ok(TType::Struct),
         unkn => Err(thrift::Error::Protocol(thrift::ProtocolError {
             kind: thrift::ProtocolErrorKind::InvalidData,
-            message: format!("cannot convert {} into TType", unkn),
+            message: format!("==> cannot convert {} into TType", unkn),
         })),
     }
 }
