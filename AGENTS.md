@@ -15,3 +15,13 @@ When contributing to this project, please ensure the following steps are complet
 5. Optionally install the `pre-commit.sh` script as `.git/hooks/pre-commit` to automate these checks.
 
 Following these steps keeps the codebase consistent with the guidance in `CONTRIBUTING.md`.
+
+## Additional Guidelines
+
+- The repository is a Rust workspace containing multiple crates, including `arrow`, `arrow-*`, `parquet`, and `parquet_derive`.
+- Use the project's `rustfmt.toml` and fix all `cargo clippy` warnings.
+- Handle errors with `ArrowError` or `ParquetError`. Avoid `unwrap()` and `expect()` in library code and document all `unsafe` blocks.
+- Place unit tests next to the code with `#[cfg(test)]`, integration tests under `tests/`, and benchmarks in `benches/`. Use the `parquet-testing` submodule for test data when relevant.
+- Document all public APIs with `///` comments and provide examples. Use `//!` for module level docs.
+- Optimize for performance: prefer zero-copy patterns, minimize allocations, and consider SIMD where beneficial.
+- Ensure new files include the standard Apache License header.
