@@ -27,15 +27,10 @@
 //!
 //! [Variant issue]: https://github.com/apache/arrow-rs/issues/6736
 
-// TODO: dead code removal
-#[allow(dead_code)]
+mod builder;
 mod decoder;
-// TODO: dead code removal
-#[allow(dead_code)]
-mod variant;
-// TODO: dead code removal
-#[allow(dead_code)]
 mod utils;
+mod variant;
 
-#[cfg(test)]
-mod test_variant;
+pub use builder::*;
+pub use variant::*;
