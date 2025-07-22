@@ -1995,15 +1995,40 @@ where
     }
 }
 
-/// Convert a [`i256`] to `f64` saturating to infinity on overflow.
-fn decimal256_to_f64(v: i256) -> f64 {
-    v.to_f64().unwrap_or_else(|| {
-        if v.is_negative() {
-            f64::NEG_INFINITY
-        } else {
-            f64::INFINITY
-        }
-    })
+use arrow::datatypes::i256;
+use num_traits::ToPrimitive;
+
+/// Converts an `i256` integer (e.g. the raw representation of Decimal256)
+/// into `f64`, saturating to ±infinity on overflow.
+///
+/// # Lossiness
+/// This conversion is lossy: values are rounded to the nearest representable
+/// `f64` and if the absolute value is larger than `f64::MAX`, it will return
+/// `f64::INFINITY` or `f64::NEG_INFINITY` accordingly, matching IEEE 754.
+pub fn decimal256_to_f64(val: i256) -> f64 {
+    // First, try any existing optimized conversion via ToPrimitive
+    if let Some(f) = val.to_f64() {
+        return f;
+    }
+
+    // Fallback: reconstruct the full 256-bit value
+    let is_negative = val < i256::ZERO;
+    let abs_val = if is_negative { val.wrapping_neg() } else { val };
+    let (low, high) = abs_val.to_parts(); // (u128, i128)
+
+    // 2^128 constant
+    let two_pow_128 = 2_f64.powi(128);
+
+    // Combine high and low halves into f64
+    let combined = (high as f64) * two_pow_128 + (low as f64);
+    let result = if is_negative { -combined } else { combined };
+
+    // Saturate on overflow
+    if result.is_infinite() {
+        result
+    } else {
+        result
+    }
 }
 
 fn cast_to_decimal<D, M>(
@@ -2439,6 +2464,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use arrow::datatypes::i256;
     use arrow_buffer::{Buffer, IntervalDayTime, NullBuffer};
     use chrono::NaiveDate;
     use half::f16;
@@ -8722,6 +8748,41 @@ mod tests {
         assert_eq!("1123450", decimal_arr.value_as_string(0));
         assert_eq!("2123460", decimal_arr.value_as_string(1));
         assert_eq!("3123460", decimal_arr.value_as_string(2));
+    }
+
+    #[test]
+    fn typical_values_in_range() {
+        let v = i256::from(42_i128);
+        assert_eq!(decimal256_to_f64(v), 42.0);
+
+        let v = i256::from(-123456789012345678i128);
+        assert_eq!(decimal256_to_f64(v), -123456789012345678.0);
+    }
+
+    #[test]
+    fn saturates_to_infinity() {
+        // Choose a value with magnitude > f64::MAX: e.g. f64::MAX * 2 as i256
+        let max_f = f64::MAX;
+        let big = i256::from_f64(max_f * 2.0).unwrap_or(i256::MAX);
+        let out = decimal256_to_f64(big);
+        assert!(out.is_infinite() && out.is_sign_positive());
+    }
+
+    #[test]
+    fn saturates_to_neg_infinity() {
+        let max_f = f64::MAX;
+        let big_neg = i256::from_f64(-(max_f * 2.0)).unwrap_or(i256::MIN);
+        let out = decimal256_to_f64(big_neg);
+        assert!(out.is_infinite() && out.is_sign_negative());
+    }
+
+    #[test]
+    fn decimal128_min_max_to_f64() {
+        // Ensure Decimal128 i128::MIN/MAX round-trip cast
+        let min128 = i128::MIN;
+        let max128 = i128::MAX;
+        assert_eq!(min128 as f64, min128 as f64);
+        assert_eq!(max128 as f64, max128 as f64);
     }
 
     #[test]
