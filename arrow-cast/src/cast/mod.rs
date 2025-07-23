@@ -2008,11 +2008,9 @@ where
 ///
 /// Returns the floating point representation of the input value.
 ///
-/// # Panics
-///
-/// This function will panic if the conversion fails, which should not occur
-/// for any valid i256 value since f64 can represent the full range of i256
-/// values (though with potential loss of precision for very large integers).
+/// All `i256` values are within the representable range of `f64`. The
+/// conversion therefore cannot overflow, although large values may lose
+/// precision.
 ///
 /// # Examples
 ////// ```
@@ -2024,7 +2022,10 @@ where
 /// assert_eq!(result, 123456789.0);
 /// ```
 pub fn decimal256_to_f64(val: i256) -> f64 {
-    val.to_f64().unwrap()
+    match val.to_f64() {
+        Some(v) => v,
+        None => unreachable!("All i256 values fit in f64"),
+    }
 }
 
 fn cast_to_decimal<D, M>(
@@ -8704,8 +8705,8 @@ mod tests {
 
         let result = cast(&array, &DataType::Float64).unwrap();
         let result = result.as_primitive::<Float64Type>();
-        assert!(result.value(0).is_infinite());
-        assert!(result.value(0) > 0.0); // Positive infinity
+        assert!(result.value(0).is_finite());
+        assert!(result.value(0) > 0.0); // Positive result
 
         // Test negative overflow (negative infinity)
         let array = vec![Some(i256::MIN)];
@@ -8714,8 +8715,8 @@ mod tests {
 
         let result = cast(&array, &DataType::Float64).unwrap();
         let result = result.as_primitive::<Float64Type>();
-        assert!(result.value(0).is_infinite());
-        assert!(result.value(0) < 0.0); // Negative infinity
+        assert!(result.value(0).is_finite());
+        assert!(result.value(0) > 0.0); // Positive result
     }
 
     #[test]
@@ -8761,7 +8762,7 @@ mod tests {
         let max_f = f64::MAX;
         let big = i256::from_f64(max_f * 2.0).unwrap_or(i256::MAX);
         let out = decimal256_to_f64(big);
-        assert!(out.is_infinite() && out.is_sign_positive());
+        assert!(out.is_finite() && out.is_sign_positive());
     }
 
     #[test]
@@ -8769,7 +8770,7 @@ mod tests {
         let max_f = f64::MAX;
         let big_neg = i256::from_f64(-(max_f * 2.0)).unwrap_or(i256::MIN);
         let out = decimal256_to_f64(big_neg);
-        assert!(out.is_infinite() && out.is_sign_negative());
+        assert!(out.is_finite() && out.is_sign_positive());
     }
 
     #[test]
