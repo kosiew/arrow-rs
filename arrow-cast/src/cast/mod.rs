@@ -1995,6 +1995,34 @@ where
     }
 }
 
+/// Converts a 256-bit signed integer to a 64-bit floating point number.
+///
+/// This function is primarily used for converting Decimal256 values to f64,
+/// where the Decimal256 is represented as an i256 (256-bit signed integer).
+///
+/// # Arguments
+///
+/// * `val` - The 256-bit signed integer value to convert
+///
+/// # Returns
+///
+/// Returns the floating point representation of the input value.
+///
+/// # Panics
+///
+/// This function will panic if the conversion fails, which should not occur
+/// for any valid i256 value since f64 can represent the full range of i256
+/// values (though with potential loss of precision for very large integers).
+///
+/// # Examples
+////// ```
+/// use arrow_buffer::i256;
+/// use arrow_cast::cast::decimal256_to_f64;
+///
+/// let val = i256::from(123456789);
+/// let result = decimal256_to_f64(val);
+/// assert_eq!(result, 123456789.0);
+/// ```
 pub fn decimal256_to_f64(val: i256) -> f64 {
     val.to_f64().unwrap()
 }
