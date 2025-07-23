@@ -614,11 +614,7 @@ where
     Ok(Arc::new(value_builder.finish()))
 }
 
-/// Cast a decimal array to a floating point array.
-///
-/// Conversion is lossy and follows standard floating point semantics. Values
-/// that exceed the representable range become `INFINITY` or `-INFINITY` without
-/// returning an error.
+// Cast the decimal array to floating-point array
 pub(crate) fn cast_decimal_to_float<D: DecimalType, T: ArrowPrimitiveType, F>(
     array: &dyn Array,
     op: F,
