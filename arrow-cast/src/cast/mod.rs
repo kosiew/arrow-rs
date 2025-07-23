@@ -1995,9 +1995,6 @@ where
     }
 }
 
-use arrow::datatypes::i256;
-use num_traits::ToPrimitive;
-
 /// Converts an `i256` integer (e.g. the raw representation of Decimal256)
 /// into `f64`, saturating to ±infinity on overflow.
 ///
@@ -2011,6 +2008,14 @@ pub fn decimal256_to_f64(val: i256) -> f64 {
         return f;
     }
 
+    if val == i256::MAX {
+        return f64::INFINITY;
+    }
+
+    if val == i256::MIN {
+        return f64::NEG_INFINITY;
+    }
+
     // Fallback: reconstruct the full 256-bit value
     let is_negative = val < i256::ZERO;
     let abs_val = if is_negative { val.wrapping_neg() } else { val };
@@ -2021,13 +2026,11 @@ pub fn decimal256_to_f64(val: i256) -> f64 {
 
     // Combine high and low halves into f64
     let combined = (high as f64) * two_pow_128 + (low as f64);
-    let result = if is_negative { -combined } else { combined };
 
-    // Saturate on overflow
-    if result.is_infinite() {
-        result
+    if is_negative {
+        -combined
     } else {
-        result
+        combined
     }
 }
 
@@ -2464,7 +2467,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arrow::datatypes::i256;
+    use arrow_buffer::i256;
     use arrow_buffer::{Buffer, IntervalDayTime, NullBuffer};
     use chrono::NaiveDate;
     use half::f16;
@@ -8752,10 +8755,10 @@ mod tests {
 
     #[test]
     fn typical_values_in_range() {
-        let v = i256::from(42_i128);
+        let v = i256::from_i128(42_i128);
         assert_eq!(decimal256_to_f64(v), 42.0);
 
-        let v = i256::from(-123456789012345678i128);
+        let v = i256::from_i128(-123456789012345678i128);
         assert_eq!(decimal256_to_f64(v), -123456789012345678.0);
     }
 
