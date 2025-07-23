@@ -8696,7 +8696,7 @@ mod tests {
     }
     #[test]
     fn test_cast_decimal256_to_f64_overflow() {
-        // Test positive overflow (positive infinity)
+        // Test casting i256::MAX: should produce a large finite positive value
         let array = vec![Some(i256::MAX)];
         let array = create_decimal256_array(array, 76, 2).unwrap();
         let array = Arc::new(array) as ArrayRef;
@@ -8706,7 +8706,7 @@ mod tests {
         assert!(result.value(0).is_finite());
         assert!(result.value(0) > 0.0); // Positive result
 
-        // Test negative overflow (negative infinity)
+        // Test casting i256::MIN: should produce a large finite negative value
         let array = vec![Some(i256::MIN)];
         let array = create_decimal256_array(array, 76, 2).unwrap();
         let array = Arc::new(array) as ArrayRef;
@@ -8714,7 +8714,7 @@ mod tests {
         let result = cast(&array, &DataType::Float64).unwrap();
         let result = result.as_primitive::<Float64Type>();
         assert!(result.value(0).is_finite());
-        assert!(result.value(0) > 0.0); // Positive result
+        assert!(result.value(0) < 0.0); // Negative result
     }
 
     #[test]
@@ -8755,7 +8755,7 @@ mod tests {
     }
 
     #[test]
-    fn saturates_to_infinity() {
+    fn large_positive_value_from_decimal256() {
         // Choose a value with magnitude > f64::MAX: e.g. f64::MAX * 2 as i256
         let max_f = f64::MAX;
         let big = i256::from_f64(max_f * 2.0).unwrap_or(i256::MAX);
@@ -8764,11 +8764,11 @@ mod tests {
     }
 
     #[test]
-    fn saturates_to_neg_infinity() {
+    fn large_negative_value_from_decimal256() {
         let max_f = f64::MAX;
         let big_neg = i256::from_f64(-(max_f * 2.0)).unwrap_or(i256::MIN);
         let out = decimal256_to_f64(big_neg);
-        assert!(out.is_finite() && out.is_sign_positive());
+        assert!(out.is_finite() && out.is_sign_negative());
     }
 
     #[test]
