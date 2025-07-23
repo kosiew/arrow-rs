@@ -1995,9 +1995,6 @@ where
     }
 }
 
-use arrow::datatypes::i256;
-use num_traits::ToPrimitive;
-
 /// Converts an `i256` integer (e.g. the raw representation of Decimal256)
 /// into `f64`, saturating to ±infinity on overflow.
 ///
@@ -2015,19 +2012,19 @@ pub fn decimal256_to_f64(val: i256) -> f64 {
     let is_negative = val < i256::ZERO;
     let abs_val = if is_negative { val.wrapping_neg() } else { val };
     let (low, high) = abs_val.to_parts(); // (u128, i128)
+    let high = high as u128;
 
     // 2^128 constant
     let two_pow_128 = 2_f64.powi(128);
 
     // Combine high and low halves into f64
     let combined = (high as f64) * two_pow_128 + (low as f64);
-    let result = if is_negative { -combined } else { combined };
 
-    // Saturate on overflow
-    if result.is_infinite() {
-        result
+    // The f64 operations above already saturate to ±infinity on overflow
+    if is_negative {
+        -combined
     } else {
-        result
+        combined
     }
 }
 
@@ -2464,7 +2461,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arrow::datatypes::i256;
+    use arrow_buffer::i256;
     use arrow_buffer::{Buffer, IntervalDayTime, NullBuffer};
     use chrono::NaiveDate;
     use half::f16;
@@ -8701,25 +8698,24 @@ mod tests {
     }
     #[test]
     fn test_cast_decimal256_to_f64_overflow() {
-        // Test positive overflow (positive infinity)
+        // Verify extreme Decimal256 values remain finite when cast to f64
         let array = vec![Some(i256::MAX)];
         let array = create_decimal256_array(array, 76, 2).unwrap();
         let array = Arc::new(array) as ArrayRef;
 
         let result = cast(&array, &DataType::Float64).unwrap();
         let result = result.as_primitive::<Float64Type>();
-        assert!(result.value(0).is_infinite());
-        assert!(result.value(0) > 0.0); // Positive infinity
+        assert!(result.value(0).is_finite());
+        assert!(result.value(0) > 0.0);
 
-        // Test negative overflow (negative infinity)
         let array = vec![Some(i256::MIN)];
         let array = create_decimal256_array(array, 76, 2).unwrap();
         let array = Arc::new(array) as ArrayRef;
 
         let result = cast(&array, &DataType::Float64).unwrap();
         let result = result.as_primitive::<Float64Type>();
-        assert!(result.value(0).is_infinite());
-        assert!(result.value(0) < 0.0); // Negative infinity
+        assert!(result.value(0).is_finite());
+        assert!(result.value(0) < 0.0);
     }
 
     #[test]
@@ -8752,20 +8748,20 @@ mod tests {
 
     #[test]
     fn typical_values_in_range() {
-        let v = i256::from(42_i128);
+        let v = i256::from_i128(42_i128);
         assert_eq!(decimal256_to_f64(v), 42.0);
 
-        let v = i256::from(-123456789012345678i128);
+        let v = i256::from_i128(-123456789012345678i128);
         assert_eq!(decimal256_to_f64(v), -123456789012345678.0);
     }
 
     #[test]
     fn saturates_to_infinity() {
-        // Choose a value with magnitude > f64::MAX: e.g. f64::MAX * 2 as i256
+        // Converting the maximum i256 should remain finite
         let max_f = f64::MAX;
         let big = i256::from_f64(max_f * 2.0).unwrap_or(i256::MAX);
         let out = decimal256_to_f64(big);
-        assert!(out.is_infinite() && out.is_sign_positive());
+        assert!(out.is_finite() && out > 0.0);
     }
 
     #[test]
@@ -8773,7 +8769,7 @@ mod tests {
         let max_f = f64::MAX;
         let big_neg = i256::from_f64(-(max_f * 2.0)).unwrap_or(i256::MIN);
         let out = decimal256_to_f64(big_neg);
-        assert!(out.is_infinite() && out.is_sign_negative());
+        assert!(out.is_finite() && out < 0.0);
     }
 
     #[test]
