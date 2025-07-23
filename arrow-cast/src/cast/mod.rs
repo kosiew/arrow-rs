@@ -1995,43 +1995,8 @@ where
     }
 }
 
-/// Converts an `i256` integer (e.g. the raw representation of Decimal256)
-/// into `f64`, saturating to ±infinity on overflow.
-///
-/// # Lossiness
-/// This conversion is lossy: values are rounded to the nearest representable
-/// `f64` and if the absolute value is larger than `f64::MAX`, it will return
-/// `f64::INFINITY` or `f64::NEG_INFINITY` accordingly, matching IEEE 754.
 pub fn decimal256_to_f64(val: i256) -> f64 {
-    // First, try any existing optimized conversion via ToPrimitive
-    if let Some(f) = val.to_f64() {
-        return f;
-    }
-
-    if val == i256::MAX {
-        return f64::INFINITY;
-    }
-
-    if val == i256::MIN {
-        return f64::NEG_INFINITY;
-    }
-
-    // Fallback: reconstruct the full 256-bit value
-    let is_negative = val < i256::ZERO;
-    let abs_val = if is_negative { val.wrapping_neg() } else { val };
-    let (low, high) = abs_val.to_parts(); // (u128, i128)
-
-    // 2^128 constant
-    let two_pow_128 = 2_f64.powi(128);
-
-    // Combine high and low halves into f64
-    let combined = (high as f64) * two_pow_128 + (low as f64);
-
-    if is_negative {
-        -combined
-    } else {
-        combined
-    }
+    val.to_f64().unwrap()
 }
 
 fn cast_to_decimal<D, M>(

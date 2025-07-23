@@ -821,6 +821,25 @@ impl ToPrimitive for i256 {
         }
     }
 
+    fn to_f64(&self) -> Option<f64> {
+        // Always map the full ±2^255 range into f64’s ±2^1023 exponent range.
+        let is_negative = *self < i256::ZERO;
+        let abs = if is_negative {
+            // two’s-complement negation
+            self.wrapping_neg()
+        } else {
+            *self
+        };
+        // Split into (low: u128, high: i128)
+        let (low, high) = abs.to_parts();
+        // 2^128 as f64
+        let two128 = 2_f64.powi(128);
+        // Combine and round into nearest f64
+        let magnitude = (high as f64) * two128 + (low as f64);
+        let value = if is_negative { -magnitude } else { magnitude };
+        Some(value)
+    }
+
     fn to_u64(&self) -> Option<u64> {
         let as_i128 = self.low as i128;
 
