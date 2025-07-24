@@ -8695,7 +8695,7 @@ mod tests {
         );
     }
     #[test]
-    fn test_cast_decimal256_to_f64_overflow() {
+    fn test_cast_decimal256_to_f64_no_overflow() {
         // Test casting i256::MAX: should produce a large finite positive value
         let array = vec![Some(i256::MAX)];
         let array = create_decimal256_array(array, 76, 2).unwrap();
