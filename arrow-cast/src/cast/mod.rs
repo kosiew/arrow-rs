@@ -694,7 +694,7 @@ fn timestamp_to_date32<T: ArrowTimestampType>(
 /// assert_eq!(2_000_018_000, d.value(1)); // value has not been adjusted
 /// // NOTE: the timestamp is adjusted (08:33:20 instead of 03:33:20 as in previous example)
 /// assert_eq!("2033-05-18T08:33:20", display::array_value_to_string(&d, 1).unwrap());
-/// ```
+/// ```text
 pub fn cast_with_options(
     array: &dyn Array,
     to_type: &DataType,
