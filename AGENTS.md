@@ -1,27 +1,71 @@
-# Repository Guidelines
+# Repository Guidelines for Contributors
 
-When contributing to this project, please ensure the following steps are completed before committing changes:
+We value clear, maintainable, and high-performance Rust code. Prioritize delivering robust solutions—formatting and lint checks come at the end.
 
-1. Initialize the test data submodules if you haven't already:
-   `git submodule update --init`.
-2. Run the test suite with Cargo. You can run all tests or limit to specific crates, for example:
-   `cargo test` or `cargo test -p arrow`.
-3. Format all Rust code with rustfmt and verify no changes are required:
-   `cargo +stable fmt --all -- --check`.
-   The parquet crate requires an additional check:
-   `cargo fmt -p parquet -- --check --config skip_children=true $(find ./parquet -name "*.rs" \! -name format.rs)`.
-4. Run Clippy to ensure there are no lints:
-   `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
-5. Optionally install the `pre-commit.sh` script as `.git/hooks/pre-commit` to automate these checks.
+---
 
-Following these steps keeps the codebase consistent with the guidance in `CONTRIBUTING.md`.
+## 1. Solution-First Workflow
 
-## Additional Guidelines
+* **Understand Requirements:** Confirm scope and behavior before coding. Discuss edge cases and performance considerations if needed.
+* **Design & Planning:** Outline the architecture, API ergonomics, and data flow. Draw diagrams or write pseudocode for complex changes.
+* **Demonstrate Usage:** Add brief examples in doc comments or updated `README.md` sections.
 
-- The repository is a Rust workspace containing multiple crates, including `arrow`, `arrow-*`, `parquet`, and `parquet_derive`.
-- Use the project's `rustfmt.toml` and fix all `cargo clippy` warnings.
-- Handle errors with `ArrowError` or `ParquetError`. Avoid `unwrap()` and `expect()` in library code and document all `unsafe` blocks.
-- Place unit tests next to the code with `#[cfg(test)]`, integration tests under `tests/`, and benchmarks in `benches/`. Use the `parquet-testing` submodule for test data when relevant.
-- Document all public APIs with `///` comments and provide examples. Use `//!` for module level docs.
-- Optimize for performance: prefer zero-copy patterns, minimize allocations, and consider SIMD where beneficial.
-- Ensure new files include the standard Apache License header.
+## 2. Code Quality & Best Practices
+
+### Idiomatic Rust
+
+* Use `snake_case` for functions and variables; `CamelCase` for types and enums.
+* Favor pattern matching, iterators, and zero-cost abstractions.
+* Use `Option<T>` and `Result<T, E>` for optional values and fallible operations.
+
+### Error Handling
+
+* Propagate errors with the `?` operator. Avoid `unwrap()` and `expect()` in library code.
+* Leverage `ArrowError` or `ParquetError` for domain-specific failures.
+* Document all `unsafe` blocks with clear safety justifications.
+
+### Performance Considerations
+
+* Prefer zero-copy patterns (e.g., `&[u8]`) over owned allocations.
+* Minimize cloning and heap usage; use `Arc<T>` for shared data.
+* Consider SIMD or parallel iteration for compute-intensive paths.
+
+## 3. Testing Strategy
+
+* **Unit Tests:** Place alongside implementation with `#[cfg(test)]`. Cover edge cases and error paths.
+* **Integration Tests:** Use the `tests/` directory to validate end-to-end behavior.
+* **Benchmarks:** Put benchmarks in `benches/` and measure performance-critical code.
+* **Test Data:** Initialize with `git submodule update --init` and reference the `parquet-testing` submodule where applicable.
+
+## 4. Documentation & Examples
+
+* Write `///` comments for public items with concise descriptions and code snippets.
+* Use `//!` for module-level documentation and link to examples.
+* Update project-level docs (`README.md`, `CONTRIBUTING.md`) to reflect new features.
+
+## 5. Collaboration & Review
+
+* **Pull Requests:** Include a clear summary of changes, rationale, and verification steps.
+* **Code Reviews:** Focus on correctness, clarity, and performance. Offer constructive suggestions.
+* **Issue Discussions:** Open issues for major design proposals or API changes.
+
+## 6. Final Checks (Optional)
+
+Run these after your solution is complete and tests pass:
+
+```bash
+# Initialize test data
+git submodule update --init
+
+# Run tests (all or specific crate)
+cargo test               # or cargo test -p arrow
+
+# Formatting checks
+cargo +stable fmt --all -- --check\ RC="$(find ./parquet -name "*.rs" \! -name format.rs)" && \
+  cargo fmt -p parquet -- --check --config skip_children=true $RC
+
+# Linting
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+```
+
+Optionally, install the provided `pre-commit.sh` in `.git/hooks/` to automate these steps. Remember: clarity, correctness, and performance first—linting and formatting second. 🚀
