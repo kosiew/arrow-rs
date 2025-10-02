@@ -49,6 +49,24 @@ We value clear, maintainable, and high-performance Rust code. Prioritize deliver
 * **Code Reviews:** Focus on correctness, clarity, and performance. Offer constructive suggestions.
 * **Issue Discussions:** Open issues for major design proposals or API changes.
 
+## Commenting Guidelines
+
+Clear, purposeful comments help future contributors understand intent and non-obvious decisions. Use comments according to these three categories:
+
+- Implementation Comments
+  - Explains non-obvious choices and tricky implementations.
+  - Serves as breadcrumbs for future developers to understand why the code was written a certain way.
+
+- Documentation Comments
+  - Describes functions, types, and modules as part of the public API.
+  - Use `///` for item-level rustdoc and `//!` for module-level documentation with examples when helpful.
+
+- Contextual Comments
+  - Documents assumptions, preconditions, and non-obvious requirements (for example, invariants or external constraints).
+  - Include links to relevant issues, RFCs, or external specs if available.
+
+Apply the right comment for the situation: prefer Documentation Comments for public-facing behavior, Implementation Comments for complex internal logic, and Contextual Comments to capture assumptions and constraints that are not obvious from the code itself.
+
 ## 6. Final Checks (Optional)
 
 Run these after your solution is complete and tests pass:
